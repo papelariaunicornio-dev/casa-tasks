@@ -187,7 +187,7 @@ body {
 
   function loadTarefas(cb) {
     var url = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_TAREFAS
-      + "?where=(ativa,eq,true)&sort=ordem&limit=200";
+      + "?where=(ativa,eq,1)&sort=ordem&limit=200";
     xhr("GET", url, null, function(err, data) {
       if (err) return cb(err);
       tarefas = data.list || [];
