@@ -10,8 +10,7 @@ var CASA_CONFIG = {
 EOF
 
 # Generate nginx config from template
-export NOCO_PROXY_URL="${NOCO_PROXY_URL:-https://nocodb.papelariaunicornio.com.br/api/v1}"
 export NOCO_TOKEN="${NOCO_TOKEN}"
-envsubst '${NOCO_PROXY_URL} ${NOCO_TOKEN}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
+envsubst '${NOCO_TOKEN}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
 
 exec nginx -g 'daemon off;'
