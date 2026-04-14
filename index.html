@@ -150,8 +150,7 @@ body {
   "use strict";
 
   var C = window.CASA_CONFIG || {};
-  var API_BASE = C.API_BASE || "";
-  var TOKEN = C.TOKEN || "";
+  var API_BASE = C.API_BASE || "/api/v1";
   var BASE_ID = C.BASE_ID || "";
   var TABLE_TAREFAS = C.TABLE_TAREFAS || "";
   var TABLE_REGISTROS = C.TABLE_REGISTROS || "";
@@ -170,7 +169,6 @@ body {
   function xhr(method, url, body, cb) {
     var req = new XMLHttpRequest();
     req.open(method, url, true);
-    req.setRequestHeader("xc-token", TOKEN);
     req.setRequestHeader("Content-Type", "application/json");
     req.onreadystatechange = function() {
       if (req.readyState === 4) {

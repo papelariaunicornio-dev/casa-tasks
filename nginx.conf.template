@@ -8,4 +8,11 @@ server {
         try_files $uri $uri/ =404;
         add_header Cache-Control "no-cache, no-store, must-revalidate";
     }
+
+    location /api/ {
+        proxy_pass ${NOCO_PROXY_URL}/;
+        proxy_set_header Host nocodb.papelariaunicornio.com.br;
+        proxy_set_header xc-token "${NOCO_TOKEN}";
+        proxy_ssl_server_name on;
+    }
 }
