@@ -4,122 +4,157 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Casa">
 <title>Tarefas de Casa</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: rgba(0,0,0,0.05); }
 html, body { height: 100%; overflow: hidden; }
 body {
   font-family: -apple-system, Helvetica, Arial, sans-serif;
-  background: #1a1a2e;
-  color: #e0e0e0;
-  font-size: 15px;
+  background: #f5f5f5;
+  color: #222;
+  font-size: 18px;
 }
+
+/* Header */
 .header {
   display: -webkit-flex; display: flex;
   -webkit-justify-content: space-between; justify-content: space-between;
   -webkit-align-items: center; align-items: center;
-  padding: 8px 12px;
-  background: #16213e;
-  border-bottom: 1px solid #0f3460;
+  padding: 10px 20px;
+  background: #fff;
+  border-bottom: 2px solid #e0e0e0;
 }
-.header h1 { font-size: 16px; font-weight: 600; color: #e94560; }
+.header h1 { font-size: 22px; font-weight: 700; color: #333; }
 .score-bar {
   display: -webkit-flex; display: flex;
-  gap: 12px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 20px;
+  font-size: 20px;
+  font-weight: 700;
 }
-.score-bruno { color: #4fc3f7; }
-.score-nana { color: #f48fb1; }
+.score-bruno { color: #1565c0; }
+.score-nana { color: #c62828; }
+
+/* Columns */
 .columns {
   display: -webkit-flex; display: flex;
-  height: calc(100% - 44px);
+  height: calc(100% - 52px);
   overflow: hidden;
 }
 .column {
   -webkit-flex: 1; flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 6px;
+  padding: 10px 14px;
 }
-.column:first-child { border-right: 1px solid #0f3460; }
+.column:first-child { border-right: 2px solid #e0e0e0; }
+
 .col-header {
   text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+.col-header.bruno { background: #e3f2fd; color: #1565c0; }
+.col-header.nana { background: #fce4ec; color: #c62828; }
+
+/* Groups */
+.freq-group { margin-bottom: 12px; }
+.freq-label {
   font-size: 14px;
-  font-weight: 700;
-  padding: 6px 0;
-  margin-bottom: 4px;
-  border-radius: 6px;
-}
-.col-header.bruno { background: #0d47a1; color: #4fc3f7; }
-.col-header.nana { background: #880e4f; color: #f48fb1; }
-.room-group { margin-bottom: 8px; }
-.room-label {
-  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #888;
-  padding: 4px 8px 2px;
-  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: #999;
+  padding: 4px 4px 2px;
+  font-weight: 700;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 4px;
 }
+
+/* Task rows */
 .task-row {
   display: -webkit-flex; display: flex;
   -webkit-align-items: center; align-items: center;
-  padding: 8px;
-  margin: 2px 0;
-  border-radius: 6px;
-  background: #16213e;
+  padding: 10px 8px;
+  margin: 3px 0;
+  border-radius: 10px;
+  background: #fff;
   cursor: pointer;
   -webkit-user-select: none;
-  min-height: 44px;
+  min-height: 52px;
+  border: 1px solid #eee;
 }
-.task-row:active { background: #1a3a5c; }
-.task-row.done { opacity: 0.45; }
+.task-row:active { background: #f0f0f0; }
+.task-row.done { opacity: 0.4; }
 .task-row.done .task-name { text-decoration: line-through; }
+
 .checkbox {
-  width: 28px; height: 28px;
-  border: 2px solid #555;
-  border-radius: 6px;
-  margin-right: 8px;
+  width: 36px; height: 36px;
+  border: 3px solid #ccc;
+  border-radius: 8px;
+  margin-right: 12px;
   -webkit-flex-shrink: 0; flex-shrink: 0;
   display: -webkit-flex; display: flex;
   -webkit-align-items: center; align-items: center;
   -webkit-justify-content: center; justify-content: center;
-  font-size: 18px;
+  font-size: 22px;
+  color: #fff;
 }
 .task-row.done .checkbox {
-  background: #2e7d32;
-  border-color: #2e7d32;
+  background: #43a047;
+  border-color: #43a047;
 }
 .task-name {
   -webkit-flex: 1; flex: 1;
-  font-size: 14px;
+  font-size: 19px;
   line-height: 1.3;
+  font-weight: 500;
 }
 .task-pts {
-  font-size: 11px;
-  color: #888;
-  margin-left: 4px;
-  -webkit-flex-shrink: 0; flex-shrink: 0;
-}
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #888;
   font-size: 14px;
+  color: #aaa;
+  margin-left: 8px;
+  -webkit-flex-shrink: 0; flex-shrink: 0;
+  font-weight: 600;
 }
-.error-msg {
-  text-align: center;
-  padding: 20px;
-  color: #e94560;
-  font-size: 13px;
+
+/* Sob demanda collapsible */
+.demanda-toggle {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  padding: 8px 4px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  font-size: 14px;
+  color: #999;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 4px;
 }
-.last-sync {
-  font-size: 10px;
-  color: #555;
+.demanda-toggle .arrow {
+  display: inline-block;
+  margin-right: 6px;
+  -webkit-transition: -webkit-transform 0.2s;
+  transition: transform 0.2s;
 }
+.demanda-toggle.open .arrow {
+  -webkit-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+.demanda-list { display: none; }
+.demanda-list.open { display: block; }
+
+.loading, .error-msg {
+  text-align: center; padding: 40px; font-size: 18px;
+}
+.loading { color: #999; }
+.error-msg { color: #c62828; }
 </style>
 </head>
 <body>
@@ -129,7 +164,6 @@ body {
   <div class="score-bar">
     <span class="score-bruno" id="scoreBruno">Bruno: 0</span>
     <span class="score-nana" id="scoreNana">Nana: 0</span>
-    <span class="last-sync" id="lastSync"></span>
   </div>
 </div>
 
@@ -158,6 +192,7 @@ body {
   var tarefas = [];
   var registrosHoje = {};
   var busy = false;
+  var demandaOpen = { Bruno: false, Nana: false };
 
   function todayStr() {
     var d = new Date();
@@ -227,19 +262,48 @@ body {
     });
   }
 
-  function groupByRoom(list) {
-    var groups = {};
-    var order = [];
-    for (var i = 0; i < list.length; i++) {
-      var t = list[i];
-      var room = t.comodo || "Outro";
-      if (!groups[room]) {
-        groups[room] = [];
-        order.push(room);
-      }
-      groups[room].push(t);
-    }
-    return { groups: groups, order: order };
+  function freqLabel(t) {
+    if (!t.frequencia_periodo || !t.frequencia_qtd) return "sem frequencia";
+    var p = t.frequencia_periodo;
+    if (p === "dia") return "diario";
+    if (p === "semana") return "semanal";
+    if (p === "mes") return "mensal";
+    return p;
+  }
+
+  function freqOrder(label) {
+    if (label === "diario") return 0;
+    if (label === "semanal") return 1;
+    if (label === "mensal") return 2;
+    return 3;
+  }
+
+  function buildTaskRow(t, done) {
+    var row = document.createElement("div");
+    row.className = "task-row" + (done ? " done" : "");
+
+    var cb = document.createElement("div");
+    cb.className = "checkbox";
+    cb.textContent = done ? "\u2713" : "";
+    row.appendChild(cb);
+
+    var name = document.createElement("div");
+    name.className = "task-name";
+    name.textContent = t.titulo;
+    row.appendChild(name);
+
+    var pts = document.createElement("div");
+    pts.className = "task-pts";
+    pts.textContent = (t.dificuldade || 1) + "pt";
+    row.appendChild(pts);
+
+    (function(rowEl, taskData, isDone) {
+      rowEl.addEventListener("click", function() {
+        toggleTask(taskData, isDone, rowEl);
+      });
+    })(row, t, done);
+
+    return row;
   }
 
   function renderColumn(containerId, pessoa) {
@@ -250,11 +314,18 @@ body {
     }
 
     var mine = [];
+    var mineOnDemand = [];
     for (var i = 0; i < tarefas.length; i++) {
-      if (tarefas[i].pessoa === pessoa) mine.push(tarefas[i]);
+      if (tarefas[i].pessoa === pessoa) {
+        if (tarefas[i].sob_demanda) {
+          mineOnDemand.push(tarefas[i]);
+        } else {
+          mine.push(tarefas[i]);
+        }
+      }
     }
 
-    if (mine.length === 0) {
+    if (mine.length === 0 && mineOnDemand.length === 0) {
       var empty = document.createElement("div");
       empty.className = "loading";
       empty.textContent = "Nenhuma tarefa";
@@ -262,55 +333,64 @@ body {
       return;
     }
 
-    var grouped = groupByRoom(mine);
-    for (var g = 0; g < grouped.order.length; g++) {
-      var room = grouped.order[g];
-      var tasks = grouped.groups[room];
+    // Group regular tasks by frequency
+    var groups = {};
+    var groupOrder = [];
+    for (var j = 0; j < mine.length; j++) {
+      var t = mine[j];
+      var label = freqLabel(t);
+      if (!groups[label]) {
+        groups[label] = [];
+        groupOrder.push(label);
+      }
+      groups[label].push(t);
+    }
+    groupOrder.sort(function(a, b) { return freqOrder(a) - freqOrder(b); });
+
+    for (var g = 0; g < groupOrder.length; g++) {
+      var gLabel = groupOrder[g];
+      var tasks = groups[gLabel];
 
       var grp = document.createElement("div");
-      grp.className = "room-group";
+      grp.className = "freq-group";
 
-      var label = document.createElement("div");
-      label.className = "room-label";
-      label.textContent = room;
-      grp.appendChild(label);
+      var lbl = document.createElement("div");
+      lbl.className = "freq-label";
+      lbl.textContent = gLabel;
+      grp.appendChild(lbl);
 
-      for (var j = 0; j < tasks.length; j++) {
-        var t = tasks[j];
-        var done = !!registrosHoje[t.Id];
-
-        var row = document.createElement("div");
-        row.className = "task-row" + (done ? " done" : "");
-        row.setAttribute("data-id", t.Id);
-        row.setAttribute("data-titulo", t.titulo);
-        row.setAttribute("data-pessoa", t.pessoa);
-        row.setAttribute("data-pontos", t.dificuldade || 1);
-
-        var cb = document.createElement("div");
-        cb.className = "checkbox";
-        cb.textContent = done ? "\u2713" : "";
-        row.appendChild(cb);
-
-        var name = document.createElement("div");
-        name.className = "task-name";
-        name.textContent = t.titulo;
-        row.appendChild(name);
-
-        var pts = document.createElement("div");
-        pts.className = "task-pts";
-        pts.textContent = (t.dificuldade || 1) + "pt";
-        row.appendChild(pts);
-
-        (function(rowEl, taskData, isDone) {
-          rowEl.addEventListener("click", function() {
-            toggleTask(taskData, isDone, rowEl);
-          });
-        })(row, t, done);
-
-        grp.appendChild(row);
+      for (var k = 0; k < tasks.length; k++) {
+        var done = !!registrosHoje[tasks[k].Id];
+        grp.appendChild(buildTaskRow(tasks[k], done));
       }
 
       col.appendChild(grp);
+    }
+
+    // On-demand collapsible section
+    if (mineOnDemand.length > 0) {
+      var toggle = document.createElement("div");
+      toggle.className = "demanda-toggle" + (demandaOpen[pessoa] ? " open" : "");
+      toggle.innerHTML = '<span class="arrow">\u25B6</span> Sob demanda (' + mineOnDemand.length + ')';
+
+      var list = document.createElement("div");
+      list.className = "demanda-list" + (demandaOpen[pessoa] ? " open" : "");
+
+      for (var m = 0; m < mineOnDemand.length; m++) {
+        var doneD = !!registrosHoje[mineOnDemand[m].Id];
+        list.appendChild(buildTaskRow(mineOnDemand[m], doneD));
+      }
+
+      (function(toggleEl, listEl, p) {
+        toggleEl.addEventListener("click", function() {
+          demandaOpen[p] = !demandaOpen[p];
+          toggleEl.className = "demanda-toggle" + (demandaOpen[p] ? " open" : "");
+          listEl.className = "demanda-list" + (demandaOpen[p] ? " open" : "");
+        });
+      })(toggle, list, pessoa);
+
+      col.appendChild(toggle);
+      col.appendChild(list);
     }
   }
 
@@ -362,11 +442,6 @@ body {
         if (!err2) updateScores(scores);
       });
     });
-    var now = new Date();
-    var hh = now.getHours();
-    var mi = now.getMinutes();
-    document.getElementById("lastSync").textContent =
-      (hh < 10 ? "0" : "") + hh + ":" + (mi < 10 ? "0" : "") + mi;
   }
 
   function init() {
