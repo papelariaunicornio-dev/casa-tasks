@@ -16,8 +16,6 @@ body {
   color: #222;
   font-size: 18px;
 }
-
-/* Header */
 .header {
   display: -webkit-flex; display: flex;
   -webkit-justify-content: space-between; justify-content: space-between;
@@ -35,8 +33,6 @@ body {
 }
 .score-bruno { color: #1565c0; }
 .score-nana { color: #c62828; }
-
-/* Columns */
 .columns {
   display: -webkit-flex; display: flex;
   height: calc(100% - 52px);
@@ -49,7 +45,6 @@ body {
   padding: 10px 14px;
 }
 .column:first-child { border-right: 2px solid #e0e0e0; }
-
 .col-header {
   text-align: center;
   font-size: 22px;
@@ -61,8 +56,6 @@ body {
 }
 .col-header.bruno { background: #e3f2fd; color: #1565c0; }
 .col-header.nana { background: #fce4ec; color: #c62828; }
-
-/* Groups */
 .freq-group { margin-bottom: 12px; }
 .freq-label {
   font-size: 14px;
@@ -74,8 +67,6 @@ body {
   border-bottom: 1px solid #e0e0e0;
   margin-bottom: 4px;
 }
-
-/* Task rows */
 .task-row {
   display: -webkit-flex; display: flex;
   -webkit-align-items: center; align-items: center;
@@ -89,9 +80,8 @@ body {
   border: 1px solid #eee;
 }
 .task-row:active { background: #f0f0f0; }
-.task-row.done { opacity: 0.4; }
+.task-row.done { opacity: 0.35; }
 .task-row.done .task-name { text-decoration: line-through; }
-
 .checkbox {
   width: 36px; height: 36px;
   border: 3px solid #ccc;
@@ -121,8 +111,6 @@ body {
   -webkit-flex-shrink: 0; flex-shrink: 0;
   font-weight: 600;
 }
-
-/* Sob demanda collapsible */
 .demanda-toggle {
   display: -webkit-flex; display: flex;
   -webkit-align-items: center; align-items: center;
@@ -149,10 +137,7 @@ body {
 }
 .demanda-list { display: none; }
 .demanda-list.open { display: block; }
-
-.loading, .error-msg {
-  text-align: center; padding: 40px; font-size: 18px;
-}
+.loading, .error-msg { text-align: center; padding: 40px; font-size: 18px; }
 .loading { color: #999; }
 .error-msg { color: #c62828; }
 </style>
@@ -190,17 +175,60 @@ body {
   var TABLE_REGISTROS = C.TABLE_REGISTROS || "";
 
   var tarefas = [];
-  var registrosHoje = {};
+  var allRegistros = [];
   var busy = false;
   var demandaOpen = { Bruno: false, Nana: false };
 
+  // ---- Date helpers (ES5) ----
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
   function todayStr() {
     var d = new Date();
-    var mm = d.getMonth() + 1;
-    var dd = d.getDate();
-    return d.getFullYear() + "-" + (mm < 10 ? "0" : "") + mm + "-" + (dd < 10 ? "0" : "") + dd;
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
   }
 
+  function mondayStr() {
+    var d = new Date();
+    var day = d.getDay() || 7; // sunday=7
+    d.setDate(d.getDate() - day + 1);
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function monthStartStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-01";
+  }
+
+  function bimestreStartStr() {
+    var d = new Date();
+    var m = d.getMonth(); // 0-indexed
+    var bm = m - (m % 2); // 0,2,4,6,8,10
+    return d.getFullYear() + "-" + pad(bm + 1) + "-01";
+  }
+
+  // Returns the start date of the current period for a task
+  function periodStart(task) {
+    var p = task.frequencia_periodo;
+    if (p === "dia") return todayStr();
+    if (p === "semana") return mondayStr();
+    if (p === "mes") return monthStartStr();
+    if (p === "2 meses") return bimestreStartStr();
+    return todayStr(); // fallback: daily
+  }
+
+  // Check if task is done in its current period
+  function isDoneInPeriod(task) {
+    var start = periodStart(task);
+    for (var i = 0; i < allRegistros.length; i++) {
+      var r = allRegistros[i];
+      if (r.tarefa_id === task.Id && r.data_hora && r.data_hora >= start) {
+        return r;
+      }
+    }
+    return null;
+  }
+
+  // ---- API ----
   function xhr(method, url, body, cb) {
     var req = new XMLHttpRequest();
     req.open(method, url, true);
@@ -228,43 +256,34 @@ body {
     });
   }
 
-  function loadRegistrosHoje(cb) {
-    var hoje = todayStr();
+  // Load all registros from the earliest possible period (bimestre start)
+  function loadRegistros(cb) {
+    var desde = bimestreStartStr();
     var url = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_REGISTROS
-      + "?where=(data_hora,gte,exactDate," + hoje + ")&limit=200";
+      + "?where=(data_hora,gte,exactDate," + desde + ")&limit=1000";
     xhr("GET", url, null, function(err, data) {
       if (err) return cb(err);
-      registrosHoje = {};
-      var list = data.list || [];
-      for (var i = 0; i < list.length; i++) {
-        var r = list[i];
-        registrosHoje[r.tarefa_id] = r;
-      }
+      allRegistros = data.list || [];
       cb(null);
     });
   }
 
-  function loadScoresHoje(cb) {
+  function calcScores() {
     var hoje = todayStr();
-    var url = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_REGISTROS
-      + "?where=(data_hora,gte,exactDate," + hoje + ")&limit=200&fields=pessoa,pontos";
-    xhr("GET", url, null, function(err, data) {
-      if (err) return cb(err);
-      var scores = { Bruno: 0, Nana: 0 };
-      var list = data.list || [];
-      for (var i = 0; i < list.length; i++) {
-        var r = list[i];
-        if (r.pessoa && scores[r.pessoa] !== undefined) {
-          scores[r.pessoa] += (r.pontos || 0);
-        }
+    var scores = { Bruno: 0, Nana: 0 };
+    for (var i = 0; i < allRegistros.length; i++) {
+      var r = allRegistros[i];
+      if (r.data_hora && r.data_hora >= hoje && r.pessoa && scores[r.pessoa] !== undefined) {
+        scores[r.pessoa] += (r.pontos || 0);
       }
-      cb(null, scores);
-    });
+    }
+    return scores;
   }
 
+  // ---- Rendering ----
   function freqLabel(t) {
-    if (!t.frequencia_periodo || !t.frequencia_qtd) return "sem frequencia";
     var p = t.frequencia_periodo;
+    if (!p) return "sem frequencia";
     if (p === "dia") return "diario";
     if (p === "semana") return "semanal";
     if (p === "mes") return "mensal";
@@ -280,7 +299,10 @@ body {
     return 4;
   }
 
-  function buildTaskRow(t, done) {
+  function buildTaskRow(t) {
+    var reg = isDoneInPeriod(t);
+    var done = !!reg;
+
     var row = document.createElement("div");
     row.className = "task-row" + (done ? " done" : "");
 
@@ -301,7 +323,7 @@ body {
 
     (function(rowEl, taskData, isDone) {
       rowEl.addEventListener("click", function() {
-        toggleTask(taskData, isDone, rowEl);
+        toggleTask(taskData, isDone);
       });
     })(row, t, done);
 
@@ -335,7 +357,7 @@ body {
       return;
     }
 
-    // Group regular tasks by frequency
+    // Group by frequency
     var groups = {};
     var groupOrder = [];
     for (var j = 0; j < mine.length; j++) {
@@ -362,14 +384,12 @@ body {
       grp.appendChild(lbl);
 
       for (var k = 0; k < tasks.length; k++) {
-        var done = !!registrosHoje[tasks[k].Id];
-        grp.appendChild(buildTaskRow(tasks[k], done));
+        grp.appendChild(buildTaskRow(tasks[k]));
       }
-
       col.appendChild(grp);
     }
 
-    // On-demand collapsible section
+    // On-demand collapsible
     if (mineOnDemand.length > 0) {
       var toggle = document.createElement("div");
       toggle.className = "demanda-toggle" + (demandaOpen[pessoa] ? " open" : "");
@@ -379,8 +399,7 @@ body {
       list.className = "demanda-list" + (demandaOpen[pessoa] ? " open" : "");
 
       for (var m = 0; m < mineOnDemand.length; m++) {
-        var doneD = !!registrosHoje[mineOnDemand[m].Id];
-        list.appendChild(buildTaskRow(mineOnDemand[m], doneD));
+        list.appendChild(buildTaskRow(mineOnDemand[m]));
       }
 
       (function(toggleEl, listEl, p) {
@@ -396,19 +415,23 @@ body {
     }
   }
 
-  function toggleTask(task, currentlyDone, rowEl) {
+  // ---- Toggle ----
+  function toggleTask(task, currentlyDone) {
     if (busy) return;
     busy = true;
 
     if (currentlyDone) {
-      var reg = registrosHoje[task.Id];
+      var reg = isDoneInPeriod(task);
       if (!reg) { busy = false; return; }
       var url = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_REGISTROS + "/" + reg.Id;
       xhr("DELETE", url, null, function(err) {
         busy = false;
         if (!err) {
-          delete registrosHoje[task.Id];
-          refresh();
+          // remove from allRegistros
+          for (var i = allRegistros.length - 1; i >= 0; i--) {
+            if (allRegistros[i].Id === reg.Id) { allRegistros.splice(i, 1); break; }
+          }
+          render();
         }
       });
     } else {
@@ -423,27 +446,19 @@ body {
       xhr("POST", url2, body, function(err, data) {
         busy = false;
         if (!err && data) {
-          registrosHoje[task.Id] = data;
-          refresh();
+          allRegistros.push(data);
+          render();
         }
       });
     }
   }
 
-  function updateScores(scores) {
+  function render() {
+    var scores = calcScores();
     document.getElementById("scoreBruno").textContent = "Bruno: " + scores.Bruno + "pt";
     document.getElementById("scoreNana").textContent = "Nana: " + scores.Nana + "pt";
-  }
-
-  function refresh() {
-    loadRegistrosHoje(function(err) {
-      if (err) return;
-      renderColumn("colBruno", "Bruno");
-      renderColumn("colNana", "Nana");
-      loadScoresHoje(function(err2, scores) {
-        if (!err2) updateScores(scores);
-      });
-    });
+    renderColumn("colBruno", "Bruno");
+    renderColumn("colNana", "Nana");
   }
 
   function init() {
@@ -453,14 +468,25 @@ body {
         document.getElementById("loadBruno").className = "error-msg";
         return;
       }
-      refresh();
+      loadRegistros(function(err2) {
+        if (err2) {
+          document.getElementById("loadBruno").textContent = "Erro: " + err2;
+          document.getElementById("loadBruno").className = "error-msg";
+          return;
+        }
+        render();
+      });
     });
   }
 
   init();
   setInterval(function() {
     loadTarefas(function(err) {
-      if (!err) refresh();
+      if (!err) {
+        loadRegistros(function(err2) {
+          if (!err2) render();
+        });
+      }
     });
   }, 60000);
 
