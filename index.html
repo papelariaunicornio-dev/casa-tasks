@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Casa">
+<title>Tarefas de Casa</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, Helvetica, Arial, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-size: 15px;
+}
+.header {
+  display: -webkit-flex; display: flex;
+  -webkit-justify-content: space-between; justify-content: space-between;
+  -webkit-align-items: center; align-items: center;
+  padding: 8px 12px;
+  background: #16213e;
+  border-bottom: 1px solid #0f3460;
+}
+.header h1 { font-size: 16px; font-weight: 600; color: #e94560; }
+.score-bar {
+  display: -webkit-flex; display: flex;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.score-bruno { color: #4fc3f7; }
+.score-nana { color: #f48fb1; }
+.columns {
+  display: -webkit-flex; display: flex;
+  height: calc(100% - 44px);
+  overflow: hidden;
+}
+.column {
+  -webkit-flex: 1; flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px;
+}
+.column:first-child { border-right: 1px solid #0f3460; }
+.col-header {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 0;
+  margin-bottom: 4px;
+  border-radius: 6px;
+}
+.col-header.bruno { background: #0d47a1; color: #4fc3f7; }
+.col-header.nana { background: #880e4f; color: #f48fb1; }
+.room-group { margin-bottom: 8px; }
+.room-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  padding: 4px 8px 2px;
+  font-weight: 600;
+}
+.task-row {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  padding: 8px;
+  margin: 2px 0;
+  border-radius: 6px;
+  background: #16213e;
+  cursor: pointer;
+  -webkit-user-select: none;
+  min-height: 44px;
+}
+.task-row:active { background: #1a3a5c; }
+.task-row.done { opacity: 0.45; }
+.task-row.done .task-name { text-decoration: line-through; }
+.checkbox {
+  width: 28px; height: 28px;
+  border: 2px solid #555;
+  border-radius: 6px;
+  margin-right: 8px;
+  -webkit-flex-shrink: 0; flex-shrink: 0;
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  -webkit-justify-content: center; justify-content: center;
+  font-size: 18px;
+}
+.task-row.done .checkbox {
+  background: #2e7d32;
+  border-color: #2e7d32;
+}
+.task-name {
+  -webkit-flex: 1; flex: 1;
+  font-size: 14px;
+  line-height: 1.3;
+}
+.task-pts {
+  font-size: 11px;
+  color: #888;
+  margin-left: 4px;
+  -webkit-flex-shrink: 0; flex-shrink: 0;
+}
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 14px;
+}
+.error-msg {
+  text-align: center;
+  padding: 20px;
+  color: #e94560;
+  font-size: 13px;
+}
+.last-sync {
+  font-size: 10px;
+  color: #555;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Tarefas de Casa</h1>
+  <div class="score-bar">
+    <span class="score-bruno" id="scoreBruno">Bruno: 0</span>
+    <span class="score-nana" id="scoreNana">Nana: 0</span>
+    <span class="last-sync" id="lastSync"></span>
+  </div>
+</div>
+
+<div class="columns">
+  <div class="column" id="colBruno">
+    <div class="col-header bruno">Bruno</div>
+    <div class="loading" id="loadBruno">Carregando...</div>
+  </div>
+  <div class="column" id="colNana">
+    <div class="col-header nana">Nana</div>
+    <div class="loading" id="loadNana">Carregando...</div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function() {
+  "use strict";
+
+  var C = window.CASA_CONFIG || {};
+  var API_BASE = C.API_BASE || "";
+  var TOKEN = C.TOKEN || "";
+  var BASE_ID = C.BASE_ID || "";
+  var TABLE_TAREFAS = C.TABLE_TAREFAS || "";
+  var TABLE_REGISTROS = C.TABLE_REGISTROS || "";
+
+  var tarefas = [];
+  var registrosHoje = {};
+  var busy = false;
+
+  function todayStr() {
+    var d = new Date();
+    var mm = d.getMonth() + 1;
+    var dd = d.getDate();
+    return d.getFullYear() + "-" + (mm < 10 ? "0" : "") + mm + "-" + (dd < 10 ? "0" : "") + dd;
+  }
+
+  function xhr(method, url, body, cb) {
+    var req = new XMLHttpRequest();
+    req.open(method, url, true);
+    req.setRequestHeader("xc-token", TOKEN);
+    req.setRequestHeader("Content-Type", "application/json");
+    req.onreadystatechange = function() {
+      if (req.readyState === 4) {
+        if (req.status >= 200 && req.status < 300) {
+          try { cb(null, JSON.parse(req.responseText)); }
+          catch(e) { cb(null, req.responseText); }
+        } else {
+          cb(req.status + ": " + req.responseText);
+        }
+      }
+    };
+    req.send(body ? JSON.stringify(body) : null);
+  }
+
+  function loadTarefas(cb) {
+    var url = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_TAREFAS
+      + "?where=(ativa,eq,true)&sort=ordem&limit=200";
+    xhr("GET", url, null, function(err, data) {
+      if (err) return cb(err);
+      tarefas = data.list || [];
+      cb(null);
+    });
+  }
+
+  function loadRegistrosHoje(cb) {
+    var hoje = todayStr();
+    var url = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_REGISTROS
+      + "?where=(data_hora,gte,exactDate," + hoje + ")&limit=200";
+    xhr("GET", url, null, function(err, data) {
+      if (err) return cb(err);
+      registrosHoje = {};
+      var list = data.list || [];
+      for (var i = 0; i < list.length; i++) {
+        var r = list[i];
+        if (r.data_hora && r.data_hora.indexOf(hoje) === 0) {
+          registrosHoje[r.tarefa_id] = r;
+        }
+      }
+      cb(null);
+    });
+  }
+
+  function loadScoresHoje(cb) {
+    var hoje = todayStr();
+    var url = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_REGISTROS
+      + "?where=(data_hora,gte,exactDate," + hoje + ")&limit=200&fields=pessoa,pontos";
+    xhr("GET", url, null, function(err, data) {
+      if (err) return cb(err);
+      var scores = { Bruno: 0, Nana: 0 };
+      var list = data.list || [];
+      for (var i = 0; i < list.length; i++) {
+        var r = list[i];
+        if (r.data_hora && r.data_hora.indexOf(hoje) === 0) {
+          if (r.pessoa && scores[r.pessoa] !== undefined) {
+            scores[r.pessoa] += (r.pontos || 0);
+          }
+        }
+      }
+      cb(null, scores);
+    });
+  }
+
+  function groupByRoom(list) {
+    var groups = {};
+    var order = [];
+    for (var i = 0; i < list.length; i++) {
+      var t = list[i];
+      var room = t.comodo || "Outro";
+      if (!groups[room]) {
+        groups[room] = [];
+        order.push(room);
+      }
+      groups[room].push(t);
+    }
+    return { groups: groups, order: order };
+  }
+
+  function renderColumn(containerId, pessoa) {
+    var col = document.getElementById(containerId);
+    var header = col.querySelector(".col-header");
+    while (col.lastChild !== header) {
+      col.removeChild(col.lastChild);
+    }
+
+    var mine = [];
+    for (var i = 0; i < tarefas.length; i++) {
+      if (tarefas[i].pessoa === pessoa) mine.push(tarefas[i]);
+    }
+
+    if (mine.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "loading";
+      empty.textContent = "Nenhuma tarefa";
+      col.appendChild(empty);
+      return;
+    }
+
+    var grouped = groupByRoom(mine);
+    for (var g = 0; g < grouped.order.length; g++) {
+      var room = grouped.order[g];
+      var tasks = grouped.groups[room];
+
+      var grp = document.createElement("div");
+      grp.className = "room-group";
+
+      var label = document.createElement("div");
+      label.className = "room-label";
+      label.textContent = room;
+      grp.appendChild(label);
+
+      for (var j = 0; j < tasks.length; j++) {
+        var t = tasks[j];
+        var done = !!registrosHoje[t.Id];
+
+        var row = document.createElement("div");
+        row.className = "task-row" + (done ? " done" : "");
+        row.setAttribute("data-id", t.Id);
+        row.setAttribute("data-titulo", t.titulo);
+        row.setAttribute("data-pessoa", t.pessoa);
+        row.setAttribute("data-pontos", t.dificuldade || 1);
+
+        var cb = document.createElement("div");
+        cb.className = "checkbox";
+        cb.textContent = done ? "\u2713" : "";
+        row.appendChild(cb);
+
+        var name = document.createElement("div");
+        name.className = "task-name";
+        name.textContent = t.titulo;
+        row.appendChild(name);
+
+        var pts = document.createElement("div");
+        pts.className = "task-pts";
+        pts.textContent = (t.dificuldade || 1) + "pt";
+        row.appendChild(pts);
+
+        (function(rowEl, taskData, isDone) {
+          rowEl.addEventListener("click", function() {
+            toggleTask(taskData, isDone, rowEl);
+          });
+        })(row, t, done);
+
+        grp.appendChild(row);
+      }
+
+      col.appendChild(grp);
+    }
+  }
+
+  function toggleTask(task, currentlyDone, rowEl) {
+    if (busy) return;
+    busy = true;
+
+    if (currentlyDone) {
+      var reg = registrosHoje[task.Id];
+      if (!reg) { busy = false; return; }
+      var url = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_REGISTROS + "/" + reg.Id;
+      xhr("DELETE", url, null, function(err) {
+        busy = false;
+        if (!err) {
+          delete registrosHoje[task.Id];
+          refresh();
+        }
+      });
+    } else {
+      var body = {
+        tarefa_id: task.Id,
+        titulo: task.titulo,
+        pessoa: task.pessoa,
+        pontos: task.dificuldade || 1,
+        data_hora: new Date().toISOString()
+      };
+      var url2 = API_BASE + "/db/data/noco/" + BASE_ID + "/" + TABLE_REGISTROS;
+      xhr("POST", url2, body, function(err, data) {
+        busy = false;
+        if (!err && data) {
+          registrosHoje[task.Id] = data;
+          refresh();
+        }
+      });
+    }
+  }
+
+  function updateScores(scores) {
+    document.getElementById("scoreBruno").textContent = "Bruno: " + scores.Bruno + "pt";
+    document.getElementById("scoreNana").textContent = "Nana: " + scores.Nana + "pt";
+  }
+
+  function refresh() {
+    loadRegistrosHoje(function(err) {
+      if (err) return;
+      renderColumn("colBruno", "Bruno");
+      renderColumn("colNana", "Nana");
+      loadScoresHoje(function(err2, scores) {
+        if (!err2) updateScores(scores);
+      });
+    });
+    var now = new Date();
+    var hh = now.getHours();
+    var mi = now.getMinutes();
+    document.getElementById("lastSync").textContent =
+      (hh < 10 ? "0" : "") + hh + ":" + (mi < 10 ? "0" : "") + mi;
+  }
+
+  function init() {
+    loadTarefas(function(err) {
+      if (err) {
+        document.getElementById("loadBruno").textContent = "Erro: " + err;
+        document.getElementById("loadBruno").className = "error-msg";
+        return;
+      }
+      refresh();
+    });
+  }
+
+  init();
+  setInterval(function() {
+    loadTarefas(function(err) {
+      if (!err) refresh();
+    });
+  }, 60000);
+
+})();
+</script>
+</body>
+</html>
