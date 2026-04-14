@@ -126,7 +126,7 @@ td input[type="checkbox"] { width: 16px; height: 16px; }
     </div>
     <div class="form-group">
       <label>Per&iacute;odo</label>
-      <select id="newFreqPeriodo"><option value="">-</option><option value="dia">dia</option><option value="semana">semana</option><option value="mes">m&ecirc;s</option></select>
+      <select id="newFreqPeriodo"><option value="">-</option><option value="dia">dia</option><option value="semana">semana</option><option value="mes">m&ecirc;s</option><option value="2 meses">2 meses</option></select>
     </div>
     <div class="form-group">
       <label>Sob dem.</label>
@@ -254,6 +254,7 @@ function renderTasks(tasks) {
           <option value="dia" ${t.frequencia_periodo==='dia'?'selected':''}>dia</option>
           <option value="semana" ${t.frequencia_periodo==='semana'?'selected':''}>semana</option>
           <option value="mes" ${t.frequencia_periodo==='mes'?'selected':''}>m\u00eas</option>
+          <option value="2 meses" ${t.frequencia_periodo==='2 meses'?'selected':''}>2 meses</option>
         </select>
       </td>
       <td style="text-align:center"><input type="checkbox" data-field="sob_demanda" ${t.sob_demanda?'checked':''} onchange="markDirty(${t.Id})"></td>
